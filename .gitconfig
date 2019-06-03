@@ -19,3 +19,6 @@
     branch = master
 [push]
     remote = origin
+[branch "dev"]
+    remote = origin
+    merge = refs/heads/dev
