@@ -1,10 +1,21 @@
 [commit]
-	message = n
+    message = n
 [merge]
-	allow = true
+    allow = true
 [vrun]
-	silent = false
-	async = false
+    silent = false
+    async = false
 [deploy]
-	host = localhost
-	path = ~/myproject/git/linux/recoll1-code
+    host = localhost
+    path = ~/myproject/git/linux/recoll1-code
+[remote "opensourceprojects"]
+    url = https://@opensourceprojects.eu/git/p/recoll1/code
+    fetch = +refs/heads/*:refs/remotes/opensourceprojects/*
+[remote "origin"]
+    url = git@github.com:huangyingw/recoll1.git
+    fetch = +refs/heads/*:refs/remotes/origin/*
+[gsync]
+    remote = opensourceprojects
+    branch = master
+[push]
+    remote = origin
