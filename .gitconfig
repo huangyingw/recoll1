@@ -1,0 +1,10 @@
+[commit]
+	message = n
+[merge]
+	allow = true
+[vrun]
+	silent = false
+	async = false
+[deploy]
+	host = localhost
+	path = ~/myproject/git/linux/recoll1-code
