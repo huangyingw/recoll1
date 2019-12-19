@@ -38,7 +38,6 @@ void RclMain::previewClosed(Preview *w)
     } else {
         LOGDEB("Old preview closed\n");
     }
-    delete w;
 }
 
 // Document up to date check. The main problem we try to solve is
@@ -79,17 +78,27 @@ bool RclMain::containerUpToDate(Rcl::Doc& doc)
         return true;
     }
 
+    // Top level (container) document, for checking for indexing error
+    string ctsig = "+";
+    Rcl::Doc ctdoc;
+    if (rcldb->getContainerDoc(doc, ctdoc)) {
+        ctdoc.getmeta(Rcl::Doc::keysig, &ctsig);
+    }
+    
     // We can only run indexing on the main index (dbidx 0)
     bool ismainidx = rcldb->fromMainIndex(doc);
     // Indexer already running?
     bool ixnotact = (m_indexerState == IXST_NOTRUNNING);
 
-    QString msg = tr("Index not up to date for this file. "
-                     "Refusing to risk showing the wrong entry. ");
+    QString msg = tr("Index not up to date for this file.<br>");
+    if (ctsig.back() == '+') {
+        msg += tr("<em>Also, it seems that the last index update for the file "
+                  "failed.</em><br/>");
+    }
     if (ixnotact && ismainidx) {
-        msg += tr("Click Ok to update the "
-                  "index for this file, then you will need to "
-                  "re-run the query when indexing is done. ");
+        msg += tr("Click Ok to try to update the "
+                  "index for this file. You will need to "
+                  "run the query again when indexing is done.<br>");
     } else if (ismainidx) {
         msg += tr("The indexer is running so things should "
                   "improve when it's done. ");
@@ -98,9 +107,9 @@ bool RclMain::containerUpToDate(Rcl::Doc& doc)
         msg += tr("The document belongs to an external index "
                   "which I can't update. ");
     }
-    msg += tr("Click Cancel to return to the list. <br>"
+    msg += tr("Click Cancel to return to the list.<br>"
               "Click Ignore to show the preview anyway (and remember for "
-              "this session).");
+              "this session). There is a risk of showing the wrong entry.<br/>");
 
     QMessageBox::StandardButtons bts = 
         QMessageBox::Ignore | QMessageBox::Cancel;
@@ -240,7 +249,12 @@ void RclMain::previewPrevOrNextInTab(Preview * w, int sid, int docnum, bool nxt)
     else 
         docnum--;
     if (docnum < 0 || !m_source || docnum >= m_source->getResCnt()) {
-        QApplication::beep();
+        if (!prefs.noBeeps) {
+            LOGDEB("Beeping\n");
+            QApplication::beep();
+        } else {
+            LOGDEB("Not beeping because nobeep is set\n");
+        }
         return;
     }
 

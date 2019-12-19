@@ -46,12 +46,17 @@ LIBREVENGE=${RCLDEPS}libwpd/librevenge-0.0.1.jfd/
 CHM=${RCLDEPS}pychm
 MISC=${RCLDEPS}misc
 LIBPFF=${RCLDEPS}pffinstall
+ASPELL=${RCLDEPS}/aspell-0.60.7/aspell-installed
 
 # Where to copy the Qt Dlls from:
 QTBIN=C:/Qt/Qt5.8.0/5.8/mingw53_32/bin
 QTGCCBIN=C:/qt/Qt5.8.0/Tools/mingw530_32/bin/
-# Where to find libgcc_s_dw2-1.dll for progs which need it copied
-MINGWBIN=$QTBIN
+
+# Where to find libgcc_s_dw2-1.dll et all for progs compiled with c:/MinGW
+# (as opposed to the mingw bundled with qt
+MINGWBIN=C:/MinGW/bin
+
+
 PATH=$MINGWBIN:$QTGCCBIN:$PATH
 export PATH
 
@@ -100,7 +105,7 @@ copyqt()
     export PATH
     $QTBIN/windeployqt recoll.exe
     # Apparently because the webkit part was grafted "by hand" on the
-    # Qt set, we need to copy some dll explicitely
+    # Qt set, we need to copy some dll explicitly
     addlibs="Qt5Core.dll Qt5Multimedia.dll \
 Qt5MultimediaWidgets.dll Qt5Network.dll Qt5OpenGL.dll \
 Qt5Positioning.dll Qt5PrintSupport.dll Qt5Sensors.dll \
@@ -158,7 +163,7 @@ copyrecoll()
 
     chkcp $RCL/python/recoll/recoll/rclconfig.py $FILTERS
     chkcp $RCL/python/recoll/recoll/conftree.py $FILTERS
-    rm -f $FILTERS/rclimg
+    rm -f $FILTERS/rclimg*
     chkcp $RCL/filters/*       $FILTERS
     rm -f $FILTERS/rclimg $FILTERS/rclimg.py
     chkcp $RCLDEPS/rclimg/rclimg.exe $FILTERS
@@ -232,7 +237,7 @@ copypoppler()
 {
     test -d $FILTERS/poppler || mkdir $FILTERS/poppler || \
         fatal cant create poppler dir
-    for f in pdftotext.exe libpoppler.dll freetype6.dll jpeg62.dll \
+    for f in pdftotext.exe pdfinfo.exe libpoppler.dll freetype6.dll jpeg62.dll \
              libpng16-16.dll zlib1.dll libtiff3.dll \
              libgcc_s_dw2-1.dll libstdc++-6.dll; do
         chkcp $POPPLER/bin/$f $FILTERS/poppler
@@ -266,7 +271,22 @@ copypff()
 {
     DEST=$FILTERS
     cp -rp $LIBPFF $DEST || fatal "can't copy pffinstall"
-    chkcp $LIBPFF/mingw32/bin/pffexport.exe $DEST/pffinstall/mingw32
+	DEST=$DEST/pffinstall/mingw32/bin
+    chkcp $LIBPFF/mingw32/bin/pffexport.exe $DEST
+    chkcp $MINGWBIN/libgcc_s_dw2-1.dll $DEST
+    chkcp $MINGWBIN/libstdc++-6.dll $DEST
+    chkcp $QTBIN/libwinpthread-1.dll $DEST
+}
+
+copyaspell()
+{
+    DEST=$FILTERS
+    cp -rp $ASPELL $DEST || fatal "can't copy $ASPELL"
+    DEST=$DEST/aspell-installed/mingw32/bin
+    # Check that we do have an aspell.exe.
+    chkcp $ASPELL/mingw32/bin/aspell.exe $DEST
+    chkcp $MINGWBIN/libgcc_s_dw2-1.dll $DEST
+    chkcp $MINGWBIN/libstdc++-6.dll $DEST
 }
 
 for d in doc examples filters images translations; do
@@ -286,6 +306,7 @@ test "$VERSION" = "$CFVERS" ||
 
 echo Packaging version $CFVERS
 
+copyaspell
 # copyrecoll must stay before copyqt so that windeployqt can do its thing
 copyrecoll
 copyqt
@@ -295,11 +316,13 @@ copypoppler
 copyantiword
 copyunrtf
 copyxslt
+# Copied into python3 and installed with it
 #copyfuture
 copymutagen
-copyepub
+# Switched to perl for lack of python3 version
 #copypyexiv2
 copywpd
+# Chm is now copied into the python tree, which is installed by copypython
 #copychm
 copypff
 copypython

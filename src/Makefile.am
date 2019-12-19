@@ -216,6 +216,8 @@ utils/copyfile.cpp \
 utils/copyfile.h \
 utils/cpuconf.cpp \
 utils/cpuconf.h \
+utils/dlib.cpp \
+utils/dlib.h \
 utils/ecrontab.cpp \
 utils/ecrontab.h \
 utils/execmd.cpp \
@@ -335,11 +337,13 @@ desktop/recoll_index_on_ac.sh \
 desktop/recoll-searchgui.desktop \
 desktop/recoll.png desktop/recoll.svg desktop/recoll.xcf \
 \
-doc/man \
-doc/prog \
-doc/user/*.html doc/user/*.css doc/user/*.txt doc/user/*.xml doc/user/Makefile \
+doc/prog/Makefile doc/prog/Doxyfile doc/prog/filters.txt doc/prog/top.txt \
 \
-filters \
+doc/user/usermanual.html doc/user/docbook-xsl.css doc/user/docbook.css \
+doc/user/Makefile doc/user/recoll.conf.xml \
+doc/user/custom.xsl doc/user/usermanual.xml \
+\
+filters/injectcommon.sh filters/recfiltcommon filters/rcltxtlines.py \
 \
 index/rclmon.sh \
 \
@@ -389,21 +393,7 @@ qtgui/fragbuts.cpp \
 qtgui/fragbuts.h \
 qtgui/guiutils.cpp \
 qtgui/guiutils.h \
-qtgui/i18n/recoll_cs.qm qtgui/i18n/recoll_cs.ts \
-qtgui/i18n/recoll_da.qm qtgui/i18n/recoll_da.ts \
-qtgui/i18n/recoll_de.qm qtgui/i18n/recoll_de.ts \
-qtgui/i18n/recoll_el.qm qtgui/i18n/recoll_el.ts \
-qtgui/i18n/recoll_es.qm qtgui/i18n/recoll_es.ts \
-qtgui/i18n/recoll_fr.qm qtgui/i18n/recoll_fr.ts \
-qtgui/i18n/recoll_it.qm qtgui/i18n/recoll_it.ts \
-qtgui/i18n/recoll_lt.qm qtgui/i18n/recoll_lt.ts \
-qtgui/i18n/recoll_pl.qm qtgui/i18n/recoll_pl.ts \
-qtgui/i18n/recoll_ru.qm qtgui/i18n/recoll_ru.ts \
-qtgui/i18n/recoll_tr.qm qtgui/i18n/recoll_tr.ts \
-qtgui/i18n/recoll_uk.qm qtgui/i18n/recoll_uk.ts \
-qtgui/i18n/recoll_xx.qm qtgui/i18n/recoll_xx.ts \
-qtgui/i18n/recoll_zh.qm qtgui/i18n/recoll_zh.ts \
-qtgui/i18n/recoll_zh_CN.qm qtgui/i18n/recoll_zh_CN.ts \
+qtgui/i18n/*.qm qtgui/i18n/*.ts \
 qtgui/idxsched.h \
 qtgui/idxsched.ui \
 qtgui/images/asearch.png \
@@ -530,11 +520,6 @@ python/pychm/AUTHORS \
 python/pychm/COPYING \
 python/pychm/MANIFEST.in \
 python/pychm/README-RECOLL.txt \
-python/pychm/pychm.egg-info \
-python/pychm/pychm.egg-info/PKG-INFO \
-python/pychm/pychm.egg-info/SOURCES.txt \
-python/pychm/pychm.egg-info/dependency_links.txt \
-python/pychm/pychm.egg-info/top_level.txt \
 python/pychm/recollchm \
 python/pychm/recollchm/__init__.py \
 python/pychm/recollchm/chm.py \
@@ -565,6 +550,8 @@ python/samples/recollqsd.py \
 sampleconf/fields sampleconf/fragbuts.xml sampleconf/mimeconf \
 sampleconf/mimemap sampleconf/mimeview sampleconf/mimeview.mac \
 sampleconf/recoll.conf sampleconf/recoll.qss \
+\
+testmains/Makefile.am \
 \
 unac/AUTHORS unac/COPYING unac/README unac/README.recoll unac/unac.c \
 \
@@ -655,7 +642,7 @@ sampleconf/mimemap \
 sampleconf/mimeview 
 
 filterdir = $(pkgdatadir)/filters
-filter_DATA = \
+dist_filter_DATA = \
 desktop/hotrecoll.py \
 filters/abiword.xsl \
 filters/fb2.xsl \
@@ -705,6 +692,7 @@ filters/rclopxml.py \
 filters/rclpdf.py \
 filters/rclppt.py \
 filters/rclps \
+filters/rclpst.py \
 filters/rclpurple \
 filters/rclpython \
 filters/rclrar \

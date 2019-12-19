@@ -6,7 +6,7 @@
 
 PPA_KEYID=D38B9201
 
-RCLVERS=1.25.18
+RCLVERS=1.26.3
 SCOPEVERS=1.20.2.4
 GSSPVERS=1.0.0
 PPAVERS=1
@@ -48,12 +48,17 @@ debdir=debian
 # Note: no new releases for lucid: no webkit. Or use old debianrclqt4 dir.
 # No new releases for trusty either because of risk of kio compat (kio
 # wont build)
-series="xenial bionic cosmic disco"
-#series=
+# Active series:
+# 16.04LTS xenial 2021-04
+# 18.04LTS bionic 2023-04
+# 19.04    disco  2020-01
+# 19.10    eoan   2020-07
+series="xenial bionic disco eoan"
+series=
 
 if test "X$series" != X ; then
     check_recoll_orig
-    test -d recoll-${RCLVERS} || tar xvzf recoll_${RCLVERS}.orig.tar.gz
+    test -d recoll-${RCLVERS} || tar xzf recoll_${RCLVERS}.orig.tar.gz
 fi
 
 for series in $series ; do
@@ -85,7 +90,15 @@ done
 
 ### KIO. Does not build on trusty from recoll 1.23 because of the need
 ### for c++11
-series="xenial bionic cosmic disco"
+# Note: no new releases for lucid: no webkit. Or use old debianrclqt4 dir.
+# No new releases for trusty either because of risk of kio compat (kio
+# wont build)
+# Active series:
+# 16.04LTS xenial 2021-04
+# 18.04LTS bionic 2023-04
+# 19.04    disco  2020-01
+# 19.10    eoan   2020-07
+series="xenial bionic disco eoan"
 #series=
 
 debdir=debiankio
@@ -99,7 +112,7 @@ if test "X$series" != X ; then
     if test ! -d $topdir ; then 
         mkdir temp
         cd temp
-        tar xvzf ../recoll_${RCLVERS}.orig.tar.gz || exit 1
+        tar xzf ../recoll_${RCLVERS}.orig.tar.gz || exit 1
         mv recoll-${RCLVERS} ../$topdir || exit 1
         cd ..
     fi
@@ -125,7 +138,15 @@ for svers in $series ; do
 done
 
 ### GSSP
-series="bionic cosmic disco"
+# Note: no new releases for lucid: no webkit. Or use old debianrclqt4 dir.
+# No new releases for trusty either because of risk of kio compat (kio
+# wont build)
+# Active series:
+# 16.04LTS xenial 2021-04
+# 18.04LTS bionic 2023-04
+# 19.04    disco  2020-01
+# 19.10    eoan   2020-07
+series="xenial bionic disco eoan"
 series=
 
 debdir=debiangssp
@@ -150,7 +171,7 @@ if test "X$series" != X ; then
             fi
         fi
     fi
-    test -d $topdir || tar xvzf gssp-recoll_${GSSPVERS}.orig.tar.gz || exit 1
+    test -d $topdir || tar xzf gssp-recoll_${GSSPVERS}.orig.tar.gz || exit 1
 fi
 for series in $series ; do
 
@@ -195,7 +216,7 @@ if test "X$series" != X ; then
             fi
         fi
     fi
-    test -d $topdir ||  tar xvzf unity-scope-recoll_${SCOPEVERS}.orig.tar.gz \
+    test -d $topdir ||  tar xzf unity-scope-recoll_${SCOPEVERS}.orig.tar.gz \
         || exit 1
 fi
 for series in $series ; do

@@ -36,6 +36,10 @@ extern bool path_empty(const std::string& path);
 /// e.g. /usr/share/recoll. Depends on OS and config
 extern const std::string& path_pkgdatadir();
 
+#ifdef _WIN32
+extern std::string path_thisexecpath();
+#endif
+
 /// Transcode to utf-8 if possible or url encoding, for display.
 extern bool printableUrl(const std::string& fcharset,
                          const std::string& in, std::string& out);
@@ -58,6 +62,15 @@ public:
     const std::string& getreason() const;
     void setnoremove(bool onoff);
     bool ok() const;
+    // Attempt to delete all files which could not be deleted on the
+    // first try (typically on Windows: because they are open by some
+    // process). Called after clearing the mimeHandler cache. Does
+    // nothing if not _WIN32
+    static void tryRemoveAgain();
+    // Also for Windows: for adding the temp files path to the default
+    // skippedPaths
+    static const std::string& rcltmpdir();
+
     class Internal;
 private:
     std::shared_ptr<Internal> m;

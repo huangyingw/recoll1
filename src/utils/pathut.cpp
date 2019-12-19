@@ -1,4 +1,4 @@
-/* Copyright (C) 2004 J.F.Dockes
+/* Copyright (C) 2004-2019 J.F.Dockes
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU Lesser General Public License as published by
  *   the Free Software Foundation; either version 2.1 of the License, or
@@ -57,9 +57,9 @@
 #include "safesysstat.h"
 #include "transcode.h"
 
-#define STAT _wstat
-#define LSTAT _wstat
-#define STATBUF _stat
+#define STAT _wstati64
+#define LSTAT _wstati64
+#define STATBUF _stati64
 #define ACCESS _waccess
 
 #else // Not windows ->
@@ -274,8 +274,8 @@ bool fsocc(const string& path, int *pc, long long *avmbs)
 #ifdef _WIN32
     ULARGE_INTEGER freebytesavail;
     ULARGE_INTEGER totalbytes;
-    if (!GetDiskFreeSpaceEx(path.c_str(), &freebytesavail,
-                            &totalbytes, NULL)) {
+    if (!GetDiskFreeSpaceExA(path.c_str(), &freebytesavail,
+							 &totalbytes, NULL)) {
         return false;
     }
     if (pc) {
@@ -654,18 +654,18 @@ bool path_makepath(const string& ipath, int mode)
     vector<string> elems;
     stringToTokens(path, elems, "/");
     path = "/";
-    for (vector<string>::const_iterator it = elems.begin();
-            it != elems.end(); it++) {
+    for (const auto& elem : elems) {
 #ifdef _WIN32
-        if (it == elems.begin() && path_strlookslikedrive(*it)) {
+        if (path == "/" && path_strlookslikedrive(elem)) {
             path = "";
         }
 #endif
-        path += *it;
+        path += elem;
         // Not using path_isdir() here, because this cant grok symlinks
         // If we hit an existing file, no worry, mkdir will just fail.
         if (access(path.c_str(), 0) != 0) {
             if (mkdir(path.c_str(), mode) != 0)  {
+                //cerr << "mkdir " << path << " failed, errno " << errno << endl;
                 return false;
             }
         }
@@ -735,52 +735,15 @@ bool path_readable(const string& path)
     return ACCESS(syspath, R_OK) == 0;
 }
 
-// Allowed punctuation in the path part of an URI according to RFC2396
-// -_.!~*'():@&=+$,
-/*
-21 !
-    22 "
-    23 #
-24 $
-    25 %
-26 &
-27 '
-28 (
-29 )
-2A *
-2B +
-2C ,
-2D -
-2E .
-2F /
-30 0
-...
-39 9
-3A :
-    3B ;
-    3C <
-3D =
-    3E >
-    3F ?
-40 @
-41 A
-...
-5A Z
-    5B [
-    5C \
-    5D ]
-    5E ^
-5F _
-    60 `
-61 a
-...
-7A z
-    7B {
-    7C |
-    7D }
-7E ~
-    7F DEL
-*/
+/* There is a lot of vagueness about what should be percent-encoded or
+ * not in a file:// url. The constraint that we have is that we may use
+ * the encoded URL to compute (MD5) a thumbnail path according to the
+ * freedesktop.org thumbnail spec, which itself does not define what
+ * should be escaped. We choose to exactly escape what gio does, as
+ * implemented in glib/gconvert.c:g_escape_uri_string(uri, UNSAFE_PATH). 
+ * Hopefully, the other desktops have the same set of escaped chars. 
+ * Note that $ is not encoded, so the value is not shell-safe.
+ */
 string url_encode(const string& url, string::size_type offs)
 {
     string out = url.substr(0, offs);

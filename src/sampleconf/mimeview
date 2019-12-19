@@ -20,13 +20,17 @@
 # the default xallexcepts list
 
 xallexcepts = application/pdf application/postscript application/x-dvi \
- text/html|gnuinfo text/html|chm text/html|epub \
+ text/html|gnuinfo text/html|chm text/html|epub text/html|rclman \
  application/x-fsdirectory|parentopen inode/directory|parentopen
 
 
 [view]
-# Pseudo entry used if the 'use desktop' preference is set in the GUI
-application/x-all = xdg-open %u
+# Pseudo entry used if the 'use desktop' preference is set in the GUI.
+# Note that we use %U to url-encode the parameter
+application/x-all = xdg-open %U
+# But do use the uncoded url for help (F1) because the fragment in there must
+# actually be processed.
+text/html|rclman = xdg-open %u
 
 application/epub+zip = ebook-viewer %f
 # Open the parent epub document for epub parts instead of opening them as
@@ -58,6 +62,11 @@ application/vnd.ms-powerpoint = libreoffice %f
 application/vnd.oasis.opendocument.text = libreoffice %f
 application/vnd.oasis.opendocument.presentation = libreoffice %f
 application/vnd.oasis.opendocument.spreadsheet = libreoffice %f
+application/vnd.oasis.opendocument.graphics = libreoffice %f
+application/vnd.oasis.opendocument.presentation-flat-xml = libreoffice %f
+application/vnd.oasis.opendocument.spreadsheet-flat-xml = libreoffice %f
+application/vnd.oasis.opendocument.text-flat-xml = libreoffice %f
+application/vnd.oasis.opendocument.text-template = libreoffice %f
 
 application/vnd.openxmlformats-officedocument.wordprocessingml.document = \
  libreoffice %f
@@ -102,20 +111,28 @@ application/x-gnumeric = gnumeric %f
 
 application/x-flac = rhythmbox %f
 audio/mpeg = rhythmbox %f
+audio/aac = rhythmbox %f
+audio/ape = rhythmbox %f
+audio/mp4 = rhythmbox %f
+audio/x-musepack = rhythmbox %f
+audio/x-wavpack = rhythmbox %f
 application/ogg = rhythmbox %f
+
 audio/x-karaoke = kmid %f
 
-image/jpeg = gwenview %f
-image/png = gwenview %f
-image/tiff = gwenview %f
-image/gif  = gwenview %f
-image/svg+xml = inkview %f
+image/jpeg = ristretto %f
+image/jp2 = ristretto %f
+image/png = ristretto %f
+image/tiff = ristretto %f
+image/gif  = ristretto %f
 image/vnd.djvu = djview %f
+image/bmp = ristretto %f
+image/x-ms-bmp = ristretto %f
+image/x-xpmi = ristretto %f
+
 image/x-xcf = gimp %f
-image/bmp = gwenview %f
-image/x-ms-bmp = gwenview %f
-image/x-xpmi = gwenview %f
 image/x-nikon-nef = ufraw %f
+image/svg+xml = inkview %f
 
 # Opening mail messages:
 #  - Thunderbird will only open a single-message file if it has an .eml
@@ -146,15 +163,28 @@ application/x-tar = ark %f
 application/zip = ark %f
 application/x-7z-compressed = ark %f
 
+application/javascript = emacsclient --no-wait %f
 application/x-awk = emacsclient --no-wait %f
+application/x-bibtex = emacsclient --no-wait %f
+application/x-csharp = emacsclient --no-wait %f
+application/x-java = emacsclient --no-wait %f
 application/x-perl = emacsclient --no-wait %f
-text/x-perl = emacsclient --no-wait %f
+application/x-php = emacsclient --no-wait %f
+application/x-ruby = emacsclient --no-wait %f 
 application/x-shellscript = emacsclient --no-wait %f
+text/x-bibtex = emacsclient --no-wait %f
+text/css = emacsclient --no-wait %f
+text/x-csharp = emacsclient --no-wait %f
+text/x-java = emacsclient --no-wait %f
+text/x-perl = emacsclient --no-wait %f
+text/x-ruby = emacsclient --no-wait %f 
 text/x-shellscript = emacsclient --no-wait %f
 text/x-srt = emacsclient --no-wait %f
 
 # Or firefox -remote "openFile(%u)"
 text/html = firefox %u
+application/x-chm-html = %u
+text/x-chm-html = %u
 
 # gnu info nodes are translated to html with a "gnuinfo"
 # rclaptg. rclshowinfo knows how to start the info command on the right
@@ -163,6 +193,9 @@ text/html|gnuinfo = rclshowinfo %F %(title);ignoreipath=1
 
 application/x-webarchive = konqueror %f
 text/x-fictionbook = ebook-viewer %f
+
+application/x-javascript = emacsclient --no-wait  %f
+application/sql = emacsclient --no-wait  %f
 application/x-tex = emacsclient --no-wait  %f
 application/xml = emacsclient --no-wait  %f
 text/xml = emacsclient --no-wait  %f

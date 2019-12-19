@@ -1,4 +1,4 @@
-/* Copyright (C) 2016 J.F.Dockes
+/* Copyright (C) 2016-2019 J.F.Dockes
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -14,7 +14,7 @@
  *   Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-#ifndef TEST_RCLUTIL
+
 #include "autoconfig.h"
 
 #include <stdio.h>
@@ -39,6 +39,7 @@
 #include <mutex>
 #include <map>
 #include <unordered_map>
+#include <list>
 
 #include "rclutil.h"
 #include "pathut.h"
@@ -49,7 +50,6 @@
 #include "smallut.h"
 
 using namespace std;
-
 
 template <class T> void map_ss_cp_noshr(T s, T *d)
 {
@@ -83,59 +83,91 @@ static bool path_isdriveabs(const string& s)
 #include <Shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
 
-string path_tchartoutf8(TCHAR *text)
-{
-#ifdef UNICODE
-    // Simple C
-    // const size_t size = ( wcslen(text) + 1 ) * sizeof(wchar_t);
-    // wcstombs(&buffer[0], text, size);
-    // std::vector<char> buffer(size);
-    // Or:
-    // Windows API
-    std::vector<char> buffer;
-    int size = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
-    if (size > 0) {
-        buffer.resize(size);
-        WideCharToMultiByte(CP_UTF8, 0, text, -1,
-                            &buffer[0], int(buffer.size()), NULL, NULL);
-    } else {
-        return string();
-    }
-    return string(&buffer[0]);
-#else
-    return text;
-#endif
-}
 string path_thisexecpath()
 {
-    TCHAR text[MAX_PATH];
-    GetModuleFileName(NULL, text, MAX_PATH);
+    wchar_t text[MAX_PATH];
+    GetModuleFileNameW(NULL, text, MAX_PATH);
 #ifdef NTDDI_WIN8_future
     PathCchRemoveFileSpec(text, MAX_PATH);
 #else
-    PathRemoveFileSpec(text);
+    PathRemoveFileSpecW(text);
 #endif
-    string path = path_tchartoutf8(text);
+    string path;
+    wchartoutf8(text, path);
     if (path.empty()) {
         path = "c:/";
     }
 
     return path;
 }
-string path_wingettempfilename(TCHAR *pref)
+
+// On Windows, we ese a subdirectory named "rcltmp" inside the windows
+// temp location to create the temporary files in.
+static const string& path_wingetrcltmpdir()
 {
-    TCHAR buf[(MAX_PATH + 1)*sizeof(TCHAR)];
-    TCHAR dbuf[(MAX_PATH + 1)*sizeof(TCHAR)];
-    GetTempPath(MAX_PATH + 1, dbuf);
-    GetTempFileName(dbuf, pref, 0, buf);
-    // Windows will have created a temp file, we delete it.
-    string filename = path_tchartoutf8(buf);
-    unlink(filename.c_str());
-    path_slashize(filename);
-    return filename;
+    // Constant: only need to compute once
+    static string tdir;
+    if (tdir.empty()) {
+        wchar_t dbuf[MAX_PATH + 1];
+        GetTempPathW(MAX_PATH + 1, dbuf);
+        wchartoutf8(dbuf, tdir);
+        tdir = path_cat(tdir, "rcltmp");;
+        if (!path_exists(tdir)) {
+            if (path_makepath(tdir, 0700)) {
+                LOGSYSERR("path_wingettempfilename", "path_makepath", tdir);
+            }
+        }
+    }
+    return tdir;
 }
 
-#endif // _WIN32
+static bool path_gettempfilename(string& filename, string& reason)
+{
+    string tdir = path_wingetrcltmpdir();
+    wchar_t dbuf[MAX_PATH + 1];
+    utf8towchar(tdir, dbuf, MAX_PATH);
+
+    wchar_t buf[MAX_PATH + 1];
+    static wchar_t prefix[]{L"rcl"};
+    GetTempFileNameW(dbuf, prefix, 0, buf);
+    wchartoutf8(buf, filename);
+
+    // Windows will have created a temp file, we delete it.
+    if (!DeleteFileW(buf)) {
+        LOGSYSERR("path_wingettempfilename", "DeleteFileW", filename);
+    } else {
+        LOGDEB1("path_wingettempfilename: DeleteFile " << filename << " Ok\n");
+    }
+    path_slashize(filename);
+    return true;
+}
+
+#else // _WIN32 above
+
+static bool path_gettempfilename(string& filename, string& reason)
+{
+    filename = path_cat(tmplocation(), "rcltmpfXXXXXX");
+    char *cp = strdup(filename.c_str());
+    if (!cp) {
+        reason = "Out of memory (for file name !)\n";
+        return false;
+    }
+
+    // Using mkstemp this way is awful (bot the suffix adding and
+    // using mkstemp() instead of mktemp just to avoid the warnings)
+    int fd;
+    if ((fd = mkstemp(cp)) < 0) {
+        free(cp);
+        reason = "TempFileInternal: mkstemp failed\n";
+        return false;
+    }
+    close(fd);
+    unlink(cp);
+    filename = cp;
+    free(cp);
+    return true;
+}
+#endif // posix
 
 // Check if path is either non-existing or an empty directory.
 bool path_empty(const string& path)
@@ -235,9 +267,9 @@ const string& tmplocation()
         }
         if (tmpdir == 0) {
 #ifdef _WIN32
-            TCHAR bufw[(MAX_PATH + 1)*sizeof(TCHAR)];
-            GetTempPath(MAX_PATH + 1, bufw);
-            stmpdir = path_tchartoutf8(bufw);
+            wchar_t bufw[MAX_PATH + 1];
+            GetTempPathW(MAX_PATH + 1, bufw);
+            wchartoutf8(bufw, stmpdir);
 #else
             stmpdir = "/tmp";
 #endif
@@ -265,21 +297,21 @@ bool maketmpdir(string& tdir, string& reason)
     // There is a race condition between name computation and
     // mkdir. try to make sure that we at least don't shoot ourselves
     // in the foot
-#if !defined(HAVE_MKDTEMP) || defined(_WIN32)
+#if !defined(HAVE_MKDTEMP)
     static std::mutex mmutex;
-    std::unique_lock lock(mmutex);
+    std::unique_lock<std::mutex> lock(mmutex);
 #endif
 
     if (!
 #ifdef HAVE_MKDTEMP
-            mkdtemp(cp)
+        mkdtemp(cp)
 #else
-            mktemp(cp)
+        mktemp(cp)
 #endif // HAVE_MKDTEMP
-       ) {
+        ) {
         free(cp);
         reason = "maketmpdir: mktemp failed for [" + tdir + "] : " +
-                 strerror(errno);
+            strerror(errno);
         tdir.erase();
         return false;
     }
@@ -291,7 +323,9 @@ bool maketmpdir(string& tdir, string& reason)
     // in the foot
     static std::mutex mmutex;
     std::unique_lock<std::mutex> lock(mmutex);
-    tdir = path_wingettempfilename(TEXT("rcltmp"));
+    if (!path_gettempfilename(tdir, reason)) {
+        return false;
+    }
 #endif
 
     // At this point the directory does not exist yet except if we used
@@ -361,31 +395,11 @@ TempFile::Internal::Internal(const string& suffix)
     static std::mutex mmutex;
     std::unique_lock<std::mutex> lock(mmutex);
 
-#ifndef _WIN32
-    string filename = path_cat(tmplocation(), "rcltmpfXXXXXX");
-    char *cp = strdup(filename.c_str());
-    if (!cp) {
-        m_reason = "Out of memory (for file name !)\n";
+    if (!path_gettempfilename(m_filename, m_reason)) {
         return;
     }
-
-    // Using mkstemp this way is awful (bot the suffix adding and
-    // using mkstemp() instead of mktemp just to avoid the warnings)
-    int fd;
-    if ((fd = mkstemp(cp)) < 0) {
-        free(cp);
-        m_reason = "TempFileInternal: mkstemp failed\n";
-        return;
-    }
-    close(fd);
-    unlink(cp);
-    filename = cp;
-    free(cp);
-#else
-    string filename = path_wingettempfilename(TEXT("recoll"));
-#endif
-
-    m_filename = filename + suffix;
+    m_filename += suffix;
+    LOGDEB1("TempFile: filename: " << m_filename << endl);
     int fd1 = open(m_filename.c_str(), O_CREAT | O_EXCL, 0600);
     if (fd1 < 0) {
         m_reason = string("Open/create error. errno : ") +
@@ -396,11 +410,58 @@ TempFile::Internal::Internal(const string& suffix)
     }
 }
 
+const std::string& TempFile::rcltmpdir()
+{
+#ifdef _WIN32
+    return path_wingetrcltmpdir();
+#else
+    return tmplocation();
+#endif
+}
+
+#ifdef _WIN32
+static list<string> remainingTempFileNames;
+static std::mutex remTmpFNMutex;
+#endif
+
 TempFile::Internal::~Internal()
 {
     if (!m_filename.empty() && !m_noremove) {
-        unlink(m_filename.c_str());
+        LOGDEB1("TempFile:~: unlinking " << m_filename << endl);
+        if (unlink(m_filename.c_str()) != 0) {
+            LOGSYSERR("TempFile:~", "unlink", m_filename);
+#ifdef _WIN32
+            {
+                std::unique_lock<std::mutex> lock(remTmpFNMutex);
+                remainingTempFileNames.push_back(m_filename);
+            }
+#endif
+        } else {
+            LOGDEB1("TempFile:~: unlink " << m_filename << " Ok\n");
+        }
     }
+}
+
+// On Windows we sometimes fail to remove temporary files because
+// they are open. It's difficult to make sure this does not
+// happen, so we add a cleaning pass after clearing the input
+// handlers cache (which should kill subprocesses etc.)
+void TempFile::tryRemoveAgain()
+{
+#ifdef _WIN32
+    LOGDEB1("TempFile::tryRemoveAgain. List size: " <<
+            remainingTempFileNames.size() << endl);
+    std::unique_lock<std::mutex> lock(remTmpFNMutex);
+    std::list<string>::iterator pos = remainingTempFileNames.begin();
+    while (pos != remainingTempFileNames.end()) {
+        if (unlink(pos->c_str()) != 0) {
+            LOGSYSERR("TempFile::tryRemoveAgain", "unlink", *pos);
+            pos++;
+        } else {
+            pos = remainingTempFileNames.erase(pos);
+        }
+    }
+#endif
 }
 
 TempDir::TempDir()
@@ -448,6 +509,7 @@ static const string& xdgcachedir()
     }
     return xdgcache;
 }
+
 static const string& thumbnailsdir()
 {
     static string thumbnailsd;
@@ -506,56 +568,3 @@ void rclutil_init_mt()
     tmplocation();
     thumbnailsdir();
 }
-
-#else // TEST_RCLUTIL
-
-void path_to_thumb(const string& _input)
-{
-    string input(_input);
-    // Make absolute path if needed
-    if (input[0] != '/') {
-        input = path_absolute(input);
-    }
-
-    input = string("file://") + path_canon(input);
-
-    string path;
-    //path = url_encode(input, 7);
-    thumbPathForUrl(input, 7, path);
-    cout << path << endl;
-}
-
-const char *thisprog;
-
-int main(int argc, const char **argv)
-{
-    thisprog = *argv++;
-    argc--;
-
-    string s;
-    vector<string>::const_iterator it;
-
-#if 0
-    if (argc > 1) {
-        cerr <<  "Usage: thumbpath <filepath>" << endl;
-        exit(1);
-    }
-    string input;
-    if (argc == 1) {
-        input = *argv++;
-        if (input.empty())  {
-            cerr << "Usage: thumbpath <filepath>" << endl;
-            exit(1);
-        }
-        path_to_thumb(input);
-    } else {
-        while (getline(cin, input)) {
-            path_to_thumb(input);
-        }
-    }
-    exit(0);
-#endif
-}
-
-#endif // TEST_RCLUTIL
-

@@ -17,6 +17,8 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
+
 #ifdef _WIN32
 // needed for localtime_r under mingw?
 #define _POSIX_THREAD_SAFE_FUNCTIONS
@@ -440,6 +442,31 @@ void stringToTokens(const string& str, vector<string>& tokens,
     }
 }
 
+void stringSplitString(const string& str, vector<string>& tokens,
+                       const string& sep)
+{
+    if (str.empty() || sep.empty())
+        return;
+
+    string::size_type startPos = 0, pos;
+
+    while (startPos < str.size()) {
+        // Find next delimiter or end of string (end of token)
+        pos = str.find(sep, startPos);
+        // Add token to the vector and adjust start
+        if (pos == string::npos) {
+            tokens.push_back(str.substr(startPos));
+            break;
+        } else if (pos == startPos) {
+            // Initial or consecutive separators
+            tokens.push_back(string());
+        } else {
+            tokens.push_back(str.substr(startPos, pos - startPos));
+        }
+        startPos = pos + sep.size();
+    }
+}
+
 bool stringToBool(const string& s)
 {
     if (s.empty()) {
@@ -464,7 +491,9 @@ void trimstring(string& s, const char *ws)
 void rtrimstring(string& s, const char *ws)
 {
     string::size_type pos = s.find_last_not_of(ws);
-    if (pos != string::npos && pos != s.length() - 1) {
+    if (pos == string::npos) {
+        s.clear();
+    } else if (pos != s.length() - 1) {
         s.replace(pos + 1, string::npos, string());
     }
 }
@@ -1256,7 +1285,7 @@ bool SimpleRegexp::simpleMatch(const string& val) const
 {
     if (!ok())
         return false;
-    return regex_match(val, m->res, m->expr);
+    return regex_search(val, m->res, m->expr);
 }
 
 string SimpleRegexp::getMatch(const string& val, int i) const

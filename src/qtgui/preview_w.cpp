@@ -99,6 +99,8 @@ static void trimwildcards(string& elt)
 void Preview::init()
 {
     LOGDEB("Preview::init\n");
+    setAttribute(Qt::WA_DeleteOnClose);
+    
     // Create the first tab (the tab widget is created with one
     // initial tab for ease of use in designer, we remove it).
     addEditorTab();
@@ -131,8 +133,6 @@ void Preview::init()
                            "RCL.SEARCH.GUI.PREVIEW");
 
     // signals and slots connections
-    connect(searchTextCMB, SIGNAL(activated(int)), 
-            this, SLOT(searchTextFromIndex(int)));
     connect(searchTextCMB, SIGNAL(editTextChanged(const QString&)), 
             this, SLOT(searchTextChanged(const QString&)));
     connect(nextPB, SIGNAL(clicked()), this, SLOT(nextPressed()));
@@ -146,8 +146,10 @@ void Preview::init()
             this, SLOT (close()));
     connect(new QShortcut(nextDocInTabKS, this), SIGNAL (activated()), 
             this, SLOT (emitShowNext()));
+    connect(nextInTabPB, SIGNAL (clicked()), this, SLOT (emitShowNext()));
     connect(new QShortcut(prevDocInTabKS, this), SIGNAL (activated()), 
             this, SLOT (emitShowPrev()));
+    connect(prevInTabPB, SIGNAL (clicked()), this, SLOT (emitShowPrev()));
     connect(new QShortcut(closeTabKS, this), SIGNAL (activated()), 
             this, SLOT (closeCurrentTab()));
     connect(new QShortcut(printTabKS, this), SIGNAL (activated()), 
@@ -259,24 +261,29 @@ bool Preview::eventFilter(QObject *target, QEvent *event)
 
 void Preview::searchTextChanged(const QString & text)
 {
-    LOGDEB1("Search line text changed. text: '" << qs2utf8s(text) << "'\n");
-    m_searchTextFromIndex = -1;
-    if (text.isEmpty()) {
-        m_dynSearchActive = false;
-        clearPB->setEnabled(false);
+    LOGDEB("Preview::searchTextChanged:(" << qs2utf8s(text) << ") current: ("<<
+            qs2utf8s(searchTextCMB->currentText()) << ") currentindex " <<
+            searchTextCMB->currentIndex() << "\n");
+    if (!searchTextCMB->itemText(searchTextCMB->currentIndex()).compare(text)) {
+        // Then we assume that the text was set by selecting in the
+        // combobox There does not seem to be another way to
+        // discriminate select and hand edit. Note that the
+        // activated() signal is called *after* the editTextChanged()
+        // one, so it is useless.
+        m_searchTextFromIndex = searchTextCMB->currentIndex();
+        doSearch("", false, false);
     } else {
-        m_dynSearchActive = true;
-        clearPB->setEnabled(true);
-        doSearch(text, false, false);
+        m_searchTextFromIndex = -1;
+        if (text.isEmpty()) {
+            m_dynSearchActive = false;
+            clearPB->setEnabled(false);
+        } else {
+            m_dynSearchActive = true;
+            clearPB->setEnabled(true);
+            doSearch(text, false, false);
+        }
     }
 }
-
-void Preview::searchTextFromIndex(int idx)
-{
-    LOGDEB1("search line from index " << idx << "\n");
-    m_searchTextFromIndex = idx;
-}
-
 
 void Preview::emitSaveDocToFile()
 {
@@ -375,7 +382,7 @@ void Preview::doSearch(const QString &_text, bool next, bool reverse,
     if (found) {
         m_canBeep = true;
     } else {
-        if (m_canBeep)
+        if (m_canBeep && !prefs.noBeeps)
             QApplication::beep();
         m_canBeep = false;
     }
@@ -406,6 +413,9 @@ void Preview::currentChanged(int index)
         return;
     }
     edit->setFocus();
+
+    editPB->setEnabled(canOpen(&edit->m_dbdoc, theconfig));
+
     // Disconnect the print signal and reconnect it to the current editor
     LOGDEB1("Disconnecting reconnecting print signal\n");
     disconnect(this, SIGNAL(printCurrentPreviewRequest()), 0, 0);
@@ -643,7 +653,7 @@ bool Preview::loadDocInCurrentTab(const Rcl::Doc &idoc, int docnum)
     if (CancelCheck::instance().cancelState())
         return false;
     if (lthr.status != 0) {
-        progress.close();
+        bool canGetRawText = rcldb && rcldb->storesDocText();
         QString explain;
         if (!lthr.missing.empty()) {
             explain = QString::fromUtf8("<br>") +
@@ -655,14 +665,54 @@ bool Preview::loadDocInCurrentTab(const Rcl::Doc &idoc, int docnum)
                                  lthr.fdoc.mimetype.c_str() + explain);
         } else {
             if (progress.wasCanceled()) {
-                //QMessageBox::warning(0, "Recoll", tr("Canceled"));
+                QMessageBox::warning(0, "Recoll", tr("Canceled"));
             } else {
-                QMessageBox::warning(0, "Recoll", 
-                                     tr("Error while loading file"));
+                progress.reset();
+                // Note that we can't easily check for a readable file
+                // because it's possible that only a region is locked
+                // (e.g. on Windows for an ost file the first block is
+                // readable even if Outlook is running).
+                QString msg;
+                switch (lthr.explain) {
+                case FileInterner::FetchMissing:
+                    msg = tr("Error loading the document: file missing.");
+                    break;
+                case FileInterner::FetchPerm:
+                    msg = tr("Error loading the document: no permission.");
+                    break;
+                case FileInterner::FetchNoBackend:
+                    msg =
+                        tr("Error loading: backend not configured.");
+                    break;
+                case FileInterner::InternfileOther:
+#ifdef _WIN32
+                    msg = tr("Error loading the document: "
+                             "other handler error<br>"
+                             "Maybe the application is locking the file ?");
+#else
+                    msg = tr("Error loading the document: other handler error.");
+#endif
+                    break;
+                }
+                if (canGetRawText) {
+                    msg += tr("<br>Attempting to display from stored text.");
+                }
+                QMessageBox::warning(0, "Recoll", msg);
             }
         }
 
-        return false;
+
+        if (canGetRawText) {
+            lthr.fdoc = idoc;
+            if (!rcldb->getDocRawText(lthr.fdoc)) {
+                QMessageBox::warning(0, "Recoll",
+                                     tr("Could not fetch stored text"));
+                progress.close();
+                return false;
+            }
+        } else {
+            progress.close();
+        }
     }
     // Reset config just in case.
     theconfig->setKeyDir("");
@@ -812,6 +862,7 @@ bool Preview::loadDocInCurrentTab(const Rcl::Doc &idoc, int docnum)
         lthr.fdoc.text.clear(); 
     editor->m_fdoc = lthr.fdoc;
     editor->m_dbdoc = idoc;
+    editPB->setEnabled(canOpen(&editor->m_dbdoc, theconfig));
     if (textempty)
         editor->displayFields();
 
@@ -850,8 +901,9 @@ bool Preview::loadDocInCurrentTab(const Rcl::Doc &idoc, int docnum)
 
     // Position the editor so that the first search term is visible
     if (searchTextCMB->currentText().length() != 0) {
-        // If there is a current search string, perform the search
-        m_canBeep = true;
+        // If there is a current search string, perform the search.
+        // Do not beep for an automatic search, this is ennoying.
+        m_canBeep = false;
         doSearch(searchTextCMB->currentText(), true, false);
     } else {
         // Position to the first query term
@@ -894,7 +946,7 @@ PreviewTextEdit::PreviewTextEdit(QWidget* parent, const char* nm, Preview *pv)
 void PreviewTextEdit::onAnchorClicked(const QUrl& url)
 {
     LOGDEB("PreviewTextEdit::onAnchorClicked: " << qs2utf8s(url.toString())
-          << std::endl);
+           << std::endl);
     if (prefs.previewActiveLinks && m_preview->m_rclmain) {
         Rcl::Doc doc;
         doc.url = qs2utf8s(url.toString()).c_str();
@@ -936,8 +988,10 @@ void PreviewTextEdit::createPopupMenu(const QPoint& pos)
     if (!m_dbdoc.url.empty()) {
         popup->addAction(tr("Save document to file"), 
                          m_preview, SLOT(emitSaveDocToFile()));
-        popup->addAction(tr("Open document"), 
-                         m_preview, SLOT(emitEditRequested()));
+        if (canOpen(&m_dbdoc, theconfig)) {
+            popup->addAction(tr("Open document"), 
+                             m_preview, SLOT(emitEditRequested()));
+        }
     }
     popup->popup(mapToGlobal(pos));
 }
@@ -1016,4 +1070,3 @@ void PreviewTextEdit::print()
     QTextEdit::print(&printer);
 #endif
 }
-

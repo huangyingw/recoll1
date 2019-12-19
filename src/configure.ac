@@ -208,13 +208,20 @@ if test X$withFam != Xno ; then
 fi
 
 # Enable use of threads in the indexing pipeline.  
-# This is disabled by default as we usually care little about indexing 
-# absolute performance (more about impact on usability and total 
-# resources used).
-AC_ARG_ENABLE(idxthreads,
-    AC_HELP_STRING([--disable-idxthreads],
-   [Disable multithread indexing.]),
+# Disabled by default on OS X as this actually hurts performance.
+# Also disabled on Windows (which does not use configure, see autoconfig-win.h)
+case ${host_os} in
+    darwin*)
+    AC_ARG_ENABLE(idxthreads,
+        [--enable-idxthreads Enable multithread indexing.],
+        idxthreadsEnabled=$enableval, idxthreadsEnabled=no)
+      ;;
+    *)
+    AC_ARG_ENABLE(idxthreads,
+       [--disable-idxthreads  Disable multithread indexing.],
         idxthreadsEnabled=$enableval, idxthreadsEnabled=yes)
+      ;;
+esac
 AM_CONDITIONAL(NOTHREADS, [test X$idxthreadsEnabled = Xno])
 if test X$idxthreadsEnabled = Xyes ; then
   AC_DEFINE(IDX_THREADS, 1, [Use multiple threads for indexing])
@@ -267,7 +274,10 @@ AM_CONDITIONAL(MAKEPYTHONCHM, [test X$pythonChmEnabled = Xyes])
 
 AC_CHECK_FUNCS(mkdtemp)
 AC_CHECK_LIB([pthread], [pthread_create], [], [])
-AC_CHECK_LIB([dl], [dlopen], [], [])
+AC_SEARCH_LIBS([dlopen], [dl], [], [])
+if test X$ac_cv_search_function != Xno ; then
+   AC_DEFINE(HAVE_DLOPEN, 1, [dlopen function is available])
+fi   
 AC_CHECK_LIB([z], [zlibVersion], [], [])
 
 ############# Putenv
@@ -308,7 +318,7 @@ fi
 LIBXAPIAN=`$XAPIAN_CONFIG --libs`
 # The --static thing fails with older Xapians. Happily enough they don't
 # need it either (because there are no needed libraries (no uuid and we
-# deal explicitely with libz)
+# deal explicitly with libz)
 LIBXAPIANSTATICEXTRA=`$XAPIAN_CONFIG --static --libs 2> /dev/null`
 # Workaround for problem in xapian-config in some versions: wrongly lists
 # libstdc++.la in the lib list

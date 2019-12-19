@@ -10,9 +10,7 @@ TARGET = librecoll
 TEMPLATE = lib
 
 DEFINES += LIBRECOLL_LIBRARY BUILDING_RECOLL
-DEFINES -= UNICODE
-DEFINES -= _UNICODE
-DEFINES += _MBCS
+DEFINES += UNICODE
 DEFINES += PSAPI_VERSION=1
 DEFINES += READFILE_ENABLE_MINIZ
 DEFINES += READFILE_ENABLE_MD5
@@ -98,6 +96,7 @@ SOURCES += \
 ../../utils/conftree.cpp \
 ../../utils/copyfile.cpp \
 ../../utils/cpuconf.cpp \
+../../utils/dlib.cpp \
 ../../utils/ecrontab.cpp \
 ../../utils/utf8iter.cpp \
 ../../utils/zlibut.cpp \

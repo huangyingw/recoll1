@@ -22,12 +22,13 @@
 #
 # If pdftotext produces no text and tesseract is available, we try to
 # perform OCR. As this can be very slow and the result not always
-# good, we only do this if a file named $RECOLL_CONFDIR/ocrpdf exists
+# good, we only do this if this is required by the configuration
 #
 # We guess the OCR language in order of preference:
 #  - From the content of a ".ocrpdflang" file if it exists in the same
 #    directory as the PDF
-#  - From an RECOLL_TESSERACT_LANG environment variable
+#  - Else from the pdfocrlang in recoll.conf
+#  - Else from an RECOLL_TESSERACT_LANG environment variable
 #  - From the content of $RECOLL_CONFDIR/ocrpdf
 #  - Default to "eng"
 
@@ -43,7 +44,9 @@ import atexit
 import signal
 import rclconfig
 import glob
+import traceback
 
+_mswindows = (sys.platform == "win32")
 tmpdir = None
 
 def finalcleanup():
@@ -82,8 +85,10 @@ class PDFExtractor:
         self.pdftk = None
         self.em = em
         self.tesseract = None
-        
-        self.pdftotext = rclexecm.which("pdftotext")
+
+        # Avoid picking up a default version on Windows, we want ours
+        if not _mswindows:
+            self.pdftotext = rclexecm.which("pdftotext")
         if not self.pdftotext:
             self.pdftotext = rclexecm.which("poppler/pdftotext")
             if not self.pdftotext:
@@ -98,6 +103,7 @@ class PDFExtractor:
         # (xmltag,rcltag) pairs
         self.extrameta = self.config.getConfParam("pdfextrameta")
         if self.extrameta:
+            self.extrametafix = self.config.getConfParam("pdfextrametafix")
             self._initextrameta()
 
         # Check if we need to escape portions of text where old
@@ -118,14 +124,12 @@ class PDFExtractor:
         # either the presence of a file in the config dir (historical)
         # or a set config variable.
         self.ocrpossible = False
-        cf_doocr = self.config.getConfParam("pdfocr")
-        if cf_doocr or os.path.isfile(os.path.join(self.confdir, "ocrpdf")):
-            self.tesseract = rclexecm.which("tesseract")
-            if self.tesseract:
-                self.pdftoppm = rclexecm.which("pdftoppm")
-                if self.pdftoppm:
-                    self.ocrpossible = True
-                    self.maybemaketmpdir()
+        self.tesseract = rclexecm.which("tesseract")
+        if self.tesseract:
+            self.pdftoppm = rclexecm.which("pdftoppm")
+            if self.pdftoppm:
+                self.ocrpossible = True
+                self.maybemaketmpdir()
         # self.em.rclog("OCRPOSSIBLE: %d" % self.ocrpossible)
 
         # Pdftk is optionally used to extract attachments. This takes
@@ -134,21 +138,23 @@ class PDFExtractor:
         self.attextractdone = False
         self.attachlist = []
         cf_attach = self.config.getConfParam("pdfattach")
+        cf_attach = rclexecm.configparamtrue(cf_attach)
         if cf_attach:
             self.pdftk = rclexecm.which("pdftk")
         if self.pdftk:
             self.maybemaketmpdir()
 
     def _initextrameta(self):
-        self.pdfinfo = rclexecm.which("pdfinfo")
+        if not _mswindows:
+            self.pdfinfo = rclexecm.which("pdfinfo")
         if not self.pdfinfo:
             self.pdfinfo = rclexecm.which("poppler/pdfinfo")
         if not self.pdfinfo:
             self.extrameta = None
             return
 
-        # extrameta is like "samename metanm|rclnm ..."
-        # we turn it into a list of pairs
+        # extrameta is like "metanm|rclnm ...", where |rclnm maybe absent (keep
+        # original name). Parse into a list of pairs.
         l = self.extrameta.split()
         self.extrameta = []
         for e in l:
@@ -174,10 +180,22 @@ class PDFExtractor:
             self.pdfinfo = None
             return
 
-        self.re_head = re.compile(r'<head>', re.IGNORECASE)
-        self.re_xmlpacket = re.compile(r'<\?xpacket[ 	]+begin.*\?>' +
-                                       r'(.*)' + r'<\?xpacket[ 	]+end',
+        self.re_head = re.compile(br'<head>', re.IGNORECASE)
+        self.re_xmlpacket = re.compile(br'<\?xpacket[ 	]+begin.*\?>' +
+                                       br'(.*)' + br'<\?xpacket[ 	]+end',
                                        flags = re.DOTALL)
+        global EMF
+        EMF = None
+        if self.extrametafix:
+            try:
+                import importlib.util
+                spec = importlib.util.spec_from_file_location(
+                    'pdfextrametafix', self.extrametafix)
+                EMF = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(EMF)
+            except Exception as err:
+                self.em.rclog("Import extrametafix failed: %s" % err)
+                pass
 
     # Extract all attachments if any into temporary directory
     def extractAttach(self):
@@ -242,7 +260,7 @@ class PDFExtractor:
         tesseractlang = os.environ.get("RECOLL_TESSERACT_LANG", "");
         if tesseractlang:
             return tesseractlang
-        pdflangfile = os.path.join(self.confdir, b"ocrpdf")
+        pdflangfile = os.path.join(self.confdir, "ocrpdf")
         if os.path.isfile(pdflangfile):
             tesseractlang = open(pdflangfile, "r").read().strip()
         if tesseractlang:
@@ -268,7 +286,7 @@ class PDFExtractor:
 
         global tmpdir
         if not tmpdir:
-            return ""
+            return b""
 
         tesseractlang = self.guesstesseractlang()
         # self.em.rclog("tesseractlang %s" % tesseractlang)
@@ -283,10 +301,11 @@ class PDFExtractor:
                                    tmpfile])
         except Exception as e:
             self.em.rclog("pdftoppm failed: %s" % e)
-            return ""
+            return b""
 
         files = glob.glob(tmpfile + "*")
         for f in files:
+            out = b''
             try:
                 out = subprocess.check_output([self.tesseract, f, f, "-l",
                                                tesseractlang],
@@ -300,17 +319,15 @@ class PDFExtractor:
 
         # Concatenate the result files
         files = glob.glob(tmpfile + "*" + ".txt")
-        data = ""
+        data = b""
         for f in files:
-            data += open(f, "r").read()
+            data += open(f, "rb").read()
 
-        if not data:
-            return ""
-        return '''<html><head>
+        return b'''<html><head>
         <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">
         </head><body><pre>''' + \
         self.em.htmlescape(data) + \
-        '''</pre></body></html>'''
+        b'''</pre></body></html>'''
 
 
     # pdftotext (used to?) badly escape text inside the header
@@ -349,7 +366,7 @@ class PDFExtractor:
 
             elif inbody:
                 s = line[0:1]
-                if s != "\x0c" and s != "<":
+                if s != b"\x0c" and s != b"<":
                     isempty = False
                 # We used to remove end-of-line hyphenation (and join
                 # lines), but but it's not clear that we should do
@@ -366,17 +383,17 @@ class PDFExtractor:
         return b'\n'.join(output), isempty
 
     def _metatag(self, nm, val):
-        return "<meta name=\"" + nm + "\" content=\"" + \
-               self.em.htmlescape(val) + "\">"
+        return b"<meta name=\"" + rclexecm.makebytes(nm) + b"\" content=\"" + \
+               self.em.htmlescape(rclexecm.makebytes(val)) + b"\">"
 
     # metaheaders is a list of (nm, value) pairs
     def _injectmeta(self, html, metaheaders):
-        metatxt = ''
+        metatxt = b''
         for nm, val in metaheaders:
-            metatxt += self._metatag(nm, val) + '\n'
+            metatxt += self._metatag(nm, val) + b'\n'
         if not metatxt:
             return html
-        res = self.re_head.sub('<head>\n' + metatxt, html)
+        res = self.re_head.sub(b'<head>\n' + metatxt, html)
         #self.em.rclog("Substituted html: [%s]"%res)
         if res:
             return res
@@ -395,15 +412,14 @@ class PDFExtractor:
         
     def _setextrameta(self, html):
         if not self.pdfinfo:
-            return
+            return html
 
+        emf = EMF.MetaFixer() if EMF else None
+
+        # Execute pdfinfo and extract the XML packet
         all = subprocess.check_output([self.pdfinfo, "-meta", self.filename])
-
-        # Extract the XML packet
         res = self.re_xmlpacket.search(all)
-        xml = ''
-        if res:
-            xml = res.group(1)
+        xml = res.group(1) if res else ''
         # self.em.rclog("extrameta: XML: [%s]" % xml)
         if not xml:
             return html
@@ -417,26 +433,67 @@ class PDFExtractor:
         namespaces = {'rdf' : "http://www.w3.org/1999/02/22-rdf-syntax-ns#"}
         rdf = root.find("rdf:RDF", namespaces)
         #self.em.rclog("RDF NSMAP: %s"% rdf.nsmap)
+        if rdf is None:
+            return html
         rdfdesclist = rdf.findall("rdf:Description", rdf.nsmap)
-        #self.em.rclog("RDFDESC NSMAP: %s"% rdfdesc.nsmap)
         for metanm,rclnm in self.extrameta:
             for rdfdesc in rdfdesclist:
                 try:
-                    elt = rdfdesc.find(metanm, rdfdesc.nsmap)
+                    elts = rdfdesc.findall(metanm, rdfdesc.nsmap)
                 except:
                     # We get an exception when this rdf:Description does not
                     # define the required namespace.
                     continue
-                if elt is not None:
-                    text = self._xmltreetext(elt)
+                
+                if elts:
+                    for elt in elts:
+                        text = None
+                        try:
+                            # First try to get text from a custom element handler
+                            text = emf.metafixelt(metanm, elt)
+                        except:
+                            pass
+                        
+                        if text is None:
+                            # still nothing here, read the element text
+                            text = self._xmltreetext(elt)
+                            try:
+                                # try to run metafix
+                                text = emf.metafix(metanm, text)
+                            except:
+                                pass
+
+                        if text:
+                            # Can't use setfield as it only works for
+                            # text/plain output at the moment.
+                            #self.em.rclog("Appending: (%s,%s)"%(rclnm,text))
+                            metaheaders.append((rclnm, text))
+                else:
+                    # Some docs define the values as attributes. don't
+                    # know if this is valid but anyway...
+                    try:
+                        prefix,nm = metanm.split(":")
+                        fullnm = "{%s}%s" % (rdfdesc.nsmap[prefix], nm)
+                    except:
+                        fullnm = metanm
+                    text = rdfdesc.get(fullnm)
                     if text:
-                        # Should we set empty values ?
-                        # Can't use setfield as it only works for
-                        # text/plain output at the moment.
+                        try:
+                            # try to run metafix
+                            text = emf.metafix(metanm, text)
+                        except:
+                            pass
                         metaheaders.append((rclnm, text))
         if metaheaders:
+            if emf:
+                try:
+                    emf.wrapup(metaheaders)
+                except:
+                    pass
             return self._injectmeta(html, metaheaders)
-    
+        else:
+            return html
+
     def _selfdoc(self):
         '''Extract the text from the pdf doc (as opposed to attachment)'''
         self.em.setmimetype('text/html')
@@ -454,15 +511,22 @@ class PDFExtractor:
         #self.em.rclog("ISEMPTY: %d : data: \n%s" % (isempty, html))
 
         if isempty and self.ocrpossible:
-            html = self.ocrpdf()
+            self.config.setKeyDir(os.path.dirname(self.filename))
+            s = self.config.getConfParam("pdfocr")
+            cf_doocr = rclexecm.configparamtrue(s)
+            file_doocr = os.path.isfile(os.path.join(self.confdir, "ocrpdf"))
+            if cf_doocr or file_doocr:
+                html = self.ocrpdf()
 
         if self.extrameta:
             try:
                 html = self._setextrameta(html)
             except Exception as err:
-                self.em.rclog("Metadata extraction failed: %s" % err)
+                self.em.rclog("Metadata extraction failed: %s %s" %
+                              (err, traceback.format_exc()))
 
         return (True, html, "", eof)
+
 
     def maybemaketmpdir(self):
         global tmpdir

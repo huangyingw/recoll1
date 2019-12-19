@@ -92,11 +92,11 @@ alink="#0000FF">
                 "#RCL.INDEXING.INTRODUCTION.CONFIG">Configurations,
                 multiple indexes</a></span></dt>
                 <dt><span class="sect2">2.1.3. <a href=
-                "#idm218">Document types</a></span></dt>
+                "#idm233">Document types</a></span></dt>
                 <dt><span class="sect2">2.1.4. <a href=
-                "#idm259">Indexing failures</a></span></dt>
+                "#idm274">Indexing failures</a></span></dt>
                 <dt><span class="sect2">2.1.5. <a href=
-                "#idm271">Recovery</a></span></dt>
+                "#idm286">Recovery</a></span></dt>
               </dl>
             </dd>
             <dt><span class="sect1">2.2. <a href=
@@ -337,12 +337,15 @@ alink="#0000FF">
                 "#RCL.PROGRAM.PYTHONAPI.ELEMENTS">Interface
                 elements</a></span></dt>
                 <dt><span class="sect2">4.3.3. <a href=
+                "#RCL.PROGRAM.PYTHONAPI.LOG">Log messages for
+                Python scripts</a></span></dt>
+                <dt><span class="sect2">4.3.4. <a href=
                 "#RCL.PROGRAM.PYTHONAPI.SEARCH">Python search
                 interface</a></span></dt>
-                <dt><span class="sect2">4.3.4. <a href=
+                <dt><span class="sect2">4.3.5. <a href=
                 "#RCL.PROGRAM.PYTHONAPI.UPDATE">Creating Python
                 external indexers</a></span></dt>
-                <dt><span class="sect2">4.3.5. <a href=
+                <dt><span class="sect2">4.3.6. <a href=
                 "#RCL.PROGRAM.PYTHONAPI.COMPAT">Package
                 compatibility with the previous
                 version</a></span></dt>
@@ -851,10 +854,10 @@ alink="#0000FF">
           </div>
           <p><span class="application">Recoll</span> supports
           defining multiple indexes, each defined by its own
-          <a class="link" href="#RCL.INDEXING.CONFIG" title=
-          "2.3.&nbsp;Index configuration">configuration
-          directory</a>, in which several configuration files
-          describe what should be indexed and how.</p>
+          configuration directory. A configuration directory
+          contains <a class="link" href="#RCL.INDEXING.CONFIG"
+          title="2.3.&nbsp;Index configuration">several files</a>
+          which describe what should be indexed and how.</p>
           <p>When <span class=
           "command"><strong>recoll</strong></span> or <span class=
           "command"><strong>recollindex</strong></span> is first
@@ -864,14 +867,14 @@ alink="#0000FF">
           is located in <code class=
           "filename">$HOME/.recoll/</code> for <span class=
           "application">Unix</span>-like systems and <code class=
-          "filename">%LOCALAPPDATA%</code> on <span class=
+          "filename">%LOCALAPPDATA%\Recoll</code> on <span class=
           "application">Windows</span> (typically <code class=
-          "filename">C:\Users\[me]\Appdata\Local</code>).</p>
+          "filename">C:\Users\[me]\Appdata\Local\Recoll</code>).</p>
           <p>All configuration parameters have defaults, defined in
           system-wide files. Without further customisation, the
           default configuration will process your complete home
           directory, with a reasonable set of defaults. It can be
-          changed to process a different area of the file system,
+          adjusted to process a different area of the file system,
           select files in different ways, and many other
           things.</p>
           <p>In some cases, it may be useful to create additional
@@ -879,6 +882,35 @@ alink="#0000FF">
           personal and shared indexes, or to take advantage of the
           organization of your data to improve search
           precision.</p>
+          <p>In order to do this, you would create an empty
+          directory in a location of your choice, and then instruct
+          <span class="command"><strong>recoll</strong></span> or
+          <span class="command"><strong>recollindex</strong></span>
+          to use it by setting either a command line option
+          (<code class="literal">-c</code> <em class=
+          "replaceable"><code>/some/directory</code></em>), or an
+          environment variable (<code class=
+          "envar">RECOLL_CONFDIR</code>=<em class=
+          "replaceable"><code>/some/directory</code></em>). Any
+          modification performed by the commands (e.g.
+          configuration customisation or searches by <span class=
+          "command"><strong>recoll</strong></span> or index
+          creation by <span class=
+          "command"><strong>recollindex</strong></span>) would then
+          apply to the new directory and not to the default
+          one.</p>
+          <p>Once multiple indexes are created, you can use each of
+          them separately by setting the <code class=
+          "literal">-c</code> option or the <code class=
+          "envar">RECOLL_CONFDIR</code> environment variable when
+          starting a command, to select the desired index.</p>
+          <p>It is also possible to instruct one configuration to
+          query one or several other indexes in addition to its
+          own, by using the <span class="guimenuitem">External
+          index</span> function in the <span class=
+          "command"><strong>recoll</strong></span> GUI, or some
+          other functions in the command line and programming
+          tools.</p>
           <p>A plausible usage scenario for the multiple index
           feature would be for a system administrator to set up a
           central index for shared data, that you choose to search
@@ -904,8 +936,8 @@ alink="#0000FF">
           <div class="titlepage">
             <div>
               <div>
-                <h3 class="title"><a name="idm218" id=
-                "idm218"></a>2.1.3.&nbsp;Document types</h3>
+                <h3 class="title"><a name="idm233" id=
+                "idm233"></a>2.1.3.&nbsp;Document types</h3>
               </div>
             </div>
           </div>
@@ -1002,8 +1034,8 @@ alink="#0000FF">
           <div class="titlepage">
             <div>
               <div>
-                <h3 class="title"><a name="idm259" id=
-                "idm259"></a>2.1.4.&nbsp;Indexing failures</h3>
+                <h3 class="title"><a name="idm274" id=
+                "idm274"></a>2.1.4.&nbsp;Indexing failures</h3>
               </div>
             </div>
           </div>
@@ -1038,8 +1070,8 @@ alink="#0000FF">
           <div class="titlepage">
             <div>
               <div>
-                <h3 class="title"><a name="idm271" id=
-                "idm271"></a>2.1.5.&nbsp;Recovery</h3>
+                <h3 class="title"><a name="idm286" id=
+                "idm286"></a>2.1.5.&nbsp;Recovery</h3>
               </div>
             </div>
           </div>
@@ -1380,7 +1412,7 @@ alink="#0000FF">
           term generation</a>.</p>
           <p>Using multiple configurations implies a small level of
           command line or file manager usage. The user must
-          explicitely create additional configuration directories,
+          explicitly create additional configuration directories,
           the GUI will not do it. This is to avoid mistakenly
           creating additional directories when an argument is
           mistyped. Also, the GUI or the indexer must be launched
@@ -1390,8 +1422,8 @@ alink="#0000FF">
             <div class="titlepage">
               <div>
                 <div>
-                  <h4 class="title"><a name="idm392" id=
-                  "idm392"></a>In practise: creating and using an
+                  <h4 class="title"><a name="idm407" id=
+                  "idm407"></a>In practise: creating and using an
                   additional index</h4>
                 </div>
               </div>
@@ -1924,7 +1956,7 @@ recollindex -c "$confdir"
         by a script in the old queue location. The script is
         automatically executed by the <span class=
         "application">Recoll</span> indexer versions 1.23.5 and
-        newer. It could conceivably be executed independantly to
+        newer. It could conceivably be executed independently to
         make the new browser extension compatible with an older
         <span class="application">Recoll</span> version (the script
         is named <span class=
@@ -2172,22 +2204,22 @@ metadatacmds = ; <em class=
         import re
 
         class MetaFixer(object):
-        def __init__(self):
-        pass
+            def __init__(self):
+                pass
 
-        def metafix(self, nm, txt):
-        if nm == 'bibtex:pages':
-        txt = re.sub(r'--', '-', txt)
-        elif nm == 'someothername':
-        # do something else
-        pass
-        elif nm == 'stillanother':
-        # etc.
-        pass
+            def metafix(self, nm, txt):
+                if nm == 'bibtex:pages':
+                    txt = re.sub(r'--', '-', txt)
+                elif nm == 'someothername':
+                    # do something else
+                    pass
+                elif nm == 'stillanother':
+                    # etc.
+                    pass
         
-        return txt
-        def wrapup(self, metaheaders):
-        pass
+                return txt
+            def wrapup(self, metaheaders):
+                pass
         </pre>
           <p>If the 'metafix()' method is defined, it is called for
           each metadata field. A new MetaFixer object is created
@@ -2745,7 +2777,7 @@ fs.inotify.max_user_watches=32768
               </li>
               <li class="listitem">
                 <p>The search is insensitive to character case and
-                accents, independantly of the type of index.</p>
+                accents, independently of the type of index.</p>
               </li>
               <li class="listitem">
                 <p>An entry without any wild card character and not
@@ -3598,7 +3630,7 @@ fs.inotify.max_user_watches=32768
           spelling variations when no matching document were found.
           In some cases, both proper spellings and mispellings are
           present in the index, and it may be interesting to look
-          for them explicitely.</p>
+          for them explicitly.</p>
           <p>The term explorer tool (started from the toolbar icon
           or from the <span class="guilabel">Term explorer</span>
           entry of the <span class="guilabel">Tools</span> menu)
@@ -4016,7 +4048,9 @@ fs.inotify.max_user_watches=32768
             the document and close <span class=
             "command"><strong>recoll</strong></span>, <span class=
             "keycap"><strong>Ctrl-d</strong></span> to preview the
-            document.</p>
+            document, and <span class=
+            "keycap"><strong>Ctrl-e</strong></span> to open the
+            document snippets window.</p>
             <p><b>Editing a new search while the focus is not in
             the search entry.&nbsp;</b>You can use the <span class=
             "keycap"><strong>Ctrl-Shift-S</strong></span> shortcut
@@ -4057,7 +4091,7 @@ fs.inotify.max_user_watches=32768
           history, but the amount is limited: old queries will
           eventually be forgotten. Also, important queries may be
           difficult to find among others. This is why both types of
-          queries can also be explicitely saved to files, from the
+          queries can also be explicitly saved to files, from the
           GUI menus: <span class="guimenu">File</span> →
           <span class="guimenuitem">Save last query / Load last
           query</span></p>
@@ -5666,7 +5700,7 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
         <p>As in the past, capitalizing the first letter of a word
         will turn off its stem expansion and have no effect on
         case-sensitivity.</p>
-        <p>You can also explicitely activate case and diacritics
+        <p>You can also explicitly activate case and diacritics
         sensitivity by using modifiers with the query language.
         <code class="literal">C</code> will make the term
         case-sensitive, and <code class="literal">D</code> will
@@ -5718,7 +5752,7 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
               useful.</p>
             </li>
             <li class="listitem">
-              <p>There is also an independantly developed <a class=
+              <p>There is also an independently developed <a class=
               "ulink" href=
               "http://kde-apps.org/content/show.php/recollrunner?content=128203"
               target="_top">Krunner plugin</a>.</p>
@@ -6501,34 +6535,9 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
           conjunction with regular ones, through the GUI or any of
           the query interfaces.</p>
           <p>The search API is modeled along the Python database
-          API specification. There were two major changes along
-          <span class="application">Recoll</span> versions:</p>
-          <div class="itemizedlist">
-            <ul class="itemizedlist" style=
-            "list-style-type: disc;">
-              <li class="listitem">
-                <p>The basis for the <span class=
-                "application">Recoll</span> API changed from Python
-                database API version 1.0 (<span class=
-                "application">Recoll</span> versions up to 1.18.1),
-                to version 2.0 (<span class=
-                "application">Recoll</span> 1.18.2 and later).</p>
-              </li>
-              <li class="listitem">
-                <p>The <code class="literal">recoll</code> module
-                became a package (with an internal <code class=
-                "literal">recoll</code> module) as of <span class=
-                "application">Recoll</span> version 1.19, in order
-                to add more functions. For existing code, this only
-                changes the way the interface must be imported.</p>
-              </li>
-            </ul>
-          </div>
-          <p>We will describe the new API and package structure
-          here. A paragraph at the end of this section will explain
-          a few differences and ways to write code compatible with
-          both versions.</p>
-          <p>The <code class="literal">recoll</code> package now
+          API version 2.0 specification (early versions used the
+          version 1.0 spec).</p>
+          <p>The <code class="literal">recoll</code> package
           contains two modules:</p>
           <div class="itemizedlist">
             <ul class="itemizedlist" style=
@@ -6541,7 +6550,9 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
               <li class="listitem">
                 <p>The <code class="literal">rclextract</code>
                 module contains functions and classes used at query
-                time to access document data.</p>
+                time to access document data. The <code class=
+                "literal">recoll</code> module must be imported
+                before <code class="literal">rclextract</code></p>
               </li>
             </ul>
           </div>
@@ -6554,13 +6565,11 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
           chapter</a>.</p>
           <p>As an introduction, the following small sample will
           run a query and list the title and url for each of the
-          results. It would work with <span class=
-          "application">Recoll</span> 1.19 and later. The
-          <code class="filename">python/samples</code> source
-          directory contains several examples of Python programming
-          with <span class="application">Recoll</span>, exercising
-          the extension more completely, and especially its data
-          extraction features.</p>
+          results. The <code class="filename">python/samples</code>
+          source directory contains several examples of Python
+          programming with <span class="application">Recoll</span>,
+          exercising the extension more completely, and especially
+          its data extraction features.</p>
           <pre class="programlisting">
         #!/usr/bin/env python
 
@@ -6706,8 +6715,26 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
             <div>
               <div>
                 <h3 class="title"><a name=
+                "RCL.PROGRAM.PYTHONAPI.LOG" id=
+                "RCL.PROGRAM.PYTHONAPI.LOG"></a>4.3.3.&nbsp;Log
+                messages for Python scripts</h3>
+              </div>
+            </div>
+          </div>
+          <p>Two specific configuration variables: <code class=
+          "literal">pyloglevel</code> and <code class=
+          "literal">pylogfilename</code> allow overriding the
+          generic values for Python programs. Set <code class=
+          "literal">pyloglevel</code> to 2 to suppress default
+          startup messages (printed at level 3).</p>
+        </div>
+        <div class="sect2">
+          <div class="titlepage">
+            <div>
+              <div>
+                <h3 class="title"><a name=
                 "RCL.PROGRAM.PYTHONAPI.SEARCH" id=
-                "RCL.PROGRAM.PYTHONAPI.SEARCH"></a>4.3.3.&nbsp;Python
+                "RCL.PROGRAM.PYTHONAPI.SEARCH"></a>4.3.4.&nbsp;Python
                 search interface</h3>
               </div>
             </div>
@@ -6847,7 +6874,8 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
                   </dd>
                   <dt><span class=
                   "term">Query.execute(query_string, stemming=1,
-                  stemlang="english", fetchtext=False)</span></dt>
+                  stemlang="english", fetchtext=False,
+                  collapseduplicates=False)</span></dt>
                   <dd>
                     <p>Starts a search for <em class=
                     "replaceable"><code>query_string</code></em>, a
@@ -6860,7 +6888,8 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
                   </dd>
                   <dt><span class=
                   "term">Query.executesd(SearchData,
-                  fetchtext=False)</span></dt>
+                  fetchtext=False,
+                  collapseduplicates=False)</span></dt>
                   <dd>
                     <p>Starts a search for the query defined by the
                     SearchData object. If the index stores the
@@ -7278,7 +7307,7 @@ for i in range(nres):
               <div>
                 <h3 class="title"><a name=
                 "RCL.PROGRAM.PYTHONAPI.UPDATE" id=
-                "RCL.PROGRAM.PYTHONAPI.UPDATE"></a>4.3.4.&nbsp;Creating
+                "RCL.PROGRAM.PYTHONAPI.UPDATE"></a>4.3.5.&nbsp;Creating
                 Python external indexers</h3>
               </div>
             </div>
@@ -7500,7 +7529,7 @@ for i in range(nres):
               <div>
                 <h3 class="title"><a name=
                 "RCL.PROGRAM.PYTHONAPI.COMPAT" id=
-                "RCL.PROGRAM.PYTHONAPI.COMPAT"></a>4.3.5.&nbsp;Package
+                "RCL.PROGRAM.PYTHONAPI.COMPAT"></a>4.3.6.&nbsp;Package
                 compatibility with the previous version</h3>
               </div>
             </div>
@@ -8017,7 +8046,7 @@ for i in range(nres):
           build procedure (see above) installs the API package for
           the default system version (python) along with the main
           code. The package for other Python versions (e.g. python3
-          if the system default is python2) must be explicitely
+          if the system default is python2) must be explicitly
           built and installed.</p>
           <p>The <code class="filename">python/recoll/</code>
           directory contains the usual <code class=
@@ -8341,7 +8370,7 @@ for i in range(nres):
                   <p>Space-separated list of files or directories
                   to recursively index. Default to ~ (indexes
                   $HOME). You can use symbolic links in the list,
-                  they will be followed, independantly of the value
+                  they will be followed, independently of the value
                   of the followLinks variable.</p>
                 </dd>
                 <dt><a name=
@@ -8393,6 +8422,16 @@ for i in range(nres):
                   skippedNames list.</p>
                 </dd>
                 <dt><a name=
+                "RCL.INSTALL.CONFIG.RECOLLCONF.ONLYNAMES" id=
+                "RCL.INSTALL.CONFIG.RECOLLCONF.ONLYNAMES"></a><span class="term"><code class="varname">onlyNames</code></span></dt>
+                <dd>
+                  <p>Regular file name filter patterns If this is
+                  set, only the file names not in skippedNames and
+                  matching one of the patterns will be considered
+                  for indexing. Can be redefined per subtree. Does
+                  not apply to directories.</p>
+                </dd>
+                <dt><a name=
                 "RCL.INSTALL.CONFIG.RECOLLCONF.NOCONTENTSUFFIXES"
                 id=
                 "RCL.INSTALL.CONFIG.RECOLLCONF.NOCONTENTSUFFIXES"></a><span class="term"><code class="varname">noContentSuffixes</code></span></dt>
@@ -8440,7 +8479,7 @@ for i in range(nres):
                   automatically be added. The expressions are
                   matched using 'fnmatch(3)' with the FNM_PATHNAME
                   flag set by default. This means that '/'
-                  characters must be matched explicitely. You can
+                  characters must be matched explicitly. You can
                   set 'skippedPathsFnmPathname' to 0 to disable the
                   use of FNM_PATHNAME (meaning that '/*/dir3' will
                   match '/dir1/dir2/dir3'). The default value
@@ -8448,7 +8487,7 @@ for i in range(nres):
                   media to remind you that it is a bad idea to have
                   Recoll work on these (esp. with the monitor:
                   media gets indexed on mount, all data gets erased
-                  on unmount). Explicitely adding '/media/xxx' to
+                  on unmount). Explicitly adding '/media/xxx' to
                   the 'topdirs' variable will override this.</p>
                 </dd>
                 <dt><a name=
@@ -9007,6 +9046,15 @@ for i in range(nres):
                   offsets for small files. The default is 5 MB.</p>
                 </dd>
                 <dt><a name=
+                "RCL.INSTALL.CONFIG.RECOLLCONF.MBOXMAXMSGMBS" id=
+                "RCL.INSTALL.CONFIG.RECOLLCONF.MBOXMAXMSGMBS"></a><span class="term"><code class="varname">mboxmaxmsgmbs</code></span></dt>
+                <dd>
+                  <p>Maximum mbox member message size in megabytes.
+                  Size over which we assume that the mbox format is
+                  bad or we misinterpreted it, at which point we
+                  just stop processing the file.</p>
+                </dd>
+                <dt><a name=
                 "RCL.INSTALL.CONFIG.RECOLLCONF.WEBCACHEDIR" id=
                 "RCL.INSTALL.CONFIG.RECOLLCONF.WEBCACHEDIR"></a><span class="term"><code class="varname">webcachedir</code></span></dt>
                 <dd>
@@ -9237,6 +9285,19 @@ for i in range(nres):
                   <p>Override logfilename for the indexer in real
                   time mode. The default is to use the idx...
                   values if set, else the log... values.</p>
+                </dd>
+                <dt><a name=
+                "RCL.INSTALL.CONFIG.RECOLLCONF.PYLOGLEVEL" id=
+                "RCL.INSTALL.CONFIG.RECOLLCONF.PYLOGLEVEL"></a><span class="term"><code class="varname">pyloglevel</code></span></dt>
+                <dd>
+                  <p>Override loglevel for the python module.</p>
+                </dd>
+                <dt><a name=
+                "RCL.INSTALL.CONFIG.RECOLLCONF.PYLOGFILENAME" id=
+                "RCL.INSTALL.CONFIG.RECOLLCONF.PYLOGFILENAME"></a><span class="term"><code class="varname">pylogfilename</code></span></dt>
+                <dd>
+                  <p>Override logfilename for the python
+                  module.</p>
                 </dd>
                 <dt><a name=
                 "RCL.INSTALL.CONFIG.RECOLLCONF.ORGIDXCONFDIR" id=
@@ -9551,7 +9612,8 @@ for i in range(nres):
                 "RCL.INSTALL.CONFIG.RECOLLCONF.PDFOCR"></a><span class="term"><code class="varname">pdfocr</code></span></dt>
                 <dd>
                   <p>Attempt OCR of PDF files with no text content
-                  if both tesseract and pdftoppm are installed. The
+                  if both tesseract and pdftoppm are installed.
+                  This can be defined in subdirectories. The
                   default is off because OCR is so very slow.</p>
                 </dd>
                 <dt><a name=

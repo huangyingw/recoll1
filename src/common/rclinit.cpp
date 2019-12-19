@@ -205,16 +205,16 @@ LRESULT CALLBACK MainWndProc(HWND hwnd , UINT msg , WPARAM wParam,
 bool CreateInvisibleWindow()
 {
     HWND hwnd;
-    WNDCLASS wc = {0};
+    WNDCLASS wc = {0,0,0,0,0,0,0,0,0,0};
 
     wc.lpfnWndProc = (WNDPROC)MainWndProc;
     wc.hInstance = GetModuleHandle(NULL);
-    wc.hIcon = LoadIcon(GetModuleHandle(NULL), "TestWClass");
-    wc.lpszClassName = "TestWClass";
+    wc.hIcon = LoadIcon(GetModuleHandle(NULL), L"TestWClass");
+    wc.lpszClassName = L"TestWClass";
     RegisterClass(&wc);
 
     hwnd =
-        CreateWindowEx(0, "TestWClass", "TestWClass", WS_OVERLAPPEDWINDOW,
+        CreateWindowEx(0, L"TestWClass", L"TestWClass", WS_OVERLAPPEDWINDOW,
                        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                        CW_USEDEFAULT, (HWND) NULL, (HMENU) NULL,
                        GetModuleHandle(NULL), (LPVOID) NULL);
@@ -248,8 +248,8 @@ void initAsyncSigs(void (*sigcleanup)(int))
 	    }
         }
     }
-    HANDLE hInvisiblethread =
-        CreateThread(NULL, 0, RunInvisibleWindowThread, NULL, 0, &tid);
+
+	CreateThread(NULL, 0, RunInvisibleWindowThread, NULL, 0, &tid);
     SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
     eWorkFinished = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (eWorkFinished == INVALID_HANDLE_VALUE) {
@@ -273,6 +273,18 @@ RclConfig *recollinit(int flags,
     if (cleanup)
 	atexit(cleanup);
 
+#ifdef MACPORTS
+    // Apple keeps changing the way to set the environment (PATH) for
+    // a desktop app (started by launchd or whatever). Life is too
+    // short.
+    const char *cp = getenv("PATH");
+    if (!cp) //??
+        cp = "";
+    string PATH(cp);
+    PATH = string("/opt/local/bin/") + ":" + PATH;
+    setenv("PATH", PATH.c_str(), 1);
+#endif
+    
     // Make sure the locale is set. This is only for converting file names 
     // to utf8 for indexing.
     setlocale(LC_CTYPE, "");

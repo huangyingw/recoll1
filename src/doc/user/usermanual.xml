@@ -377,22 +377,23 @@
         <title>Configurations, multiple indexes</title>
 
         <para>&RCL; supports defining multiple indexes, each defined by its
-        own <link linkend="RCL.INDEXING.CONFIG">configuration directory</link>,
-        in which several configuration files describe
-        what should be indexed and how.</para>
+        own configuration directory. A configuration directory contains
+        <link linkend="RCL.INDEXING.CONFIG">several files</link> which
+        describe what should be indexed and how.</para>
 
         <para>When <command>recoll</command> or
         <command>recollindex</command> is first executed, it creates a
         default configuration directory. This configuration is the one used
         for indexing and querying when no specific configuration is
         specified. It is located in <filename>$HOME/.recoll/</filename> for
-        &LIN; and <filename>%LOCALAPPDATA%</filename> on &WIN;
-        (typically <filename>C:\Users\[me]\Appdata\Local</filename>).</para>
+        &LIN; and <filename>%LOCALAPPDATA%\Recoll</filename> on &WIN;
+        (typically
+        <filename>C:\Users\[me]\Appdata\Local\Recoll</filename>).</para> 
 
         <para>All configuration parameters have defaults, defined in
         system-wide files. Without further customisation, the default
         configuration will process your complete home directory, with a
-        reasonable set of defaults. It can be changed to process a
+        reasonable set of defaults. It can be adjusted to process a
         different area of the file system, select files in different ways,
         and many other things.</para>
 
@@ -401,6 +402,29 @@
         shared indexes, or to take advantage of the organization of your
         data to improve search precision.</para>
 
+        <para>In order to do this, you would create an empty directory in a
+        location of your choice, and then instruct
+        <command>recoll</command> or <command>recollindex</command> to use
+        it by setting either a command line option (<literal>-c</literal>
+        <replaceable>/some/directory</replaceable>), or an environment
+        variable
+        (<envar>RECOLL_CONFDIR</envar>=<replaceable>/some/directory</replaceable>).
+        Any modification performed by the commands (e.g. configuration
+        customisation or searches by <command>recoll</command> or index
+        creation by <command>recollindex</command>) would then apply to the
+        new directory and not to the default one.</para>
+
+        <para>Once multiple indexes are created, you can use each of them
+        separately by setting the <literal>-c</literal> option or the
+        <envar>RECOLL_CONFDIR</envar> environment variable when starting a
+        command, to select the desired index.</para>
+
+        <para>It is also possible to instruct one configuration to
+        query one or several other indexes in addition to its own, by using
+        the <guimenuitem>External index</guimenuitem> function in the
+        <command>recoll</command> GUI, or some other functions in the
+        command line and programming tools.</para>
+        
         <para>A plausible usage scenario for the multiple index feature
         would be for a system administrator to set up a central index for
         shared data, that you choose to search or not in addition to your
@@ -795,7 +819,7 @@
 
         <para>Using multiple configurations implies a small
         level of command line or file manager usage. The user must
-        explicitely create additional configuration directories, the GUI
+        explicitly create additional configuration directories, the GUI
         will not do it. This is to avoid mistakenly creating additional
         directories when an argument is mistyped. Also, the GUI or the
         indexer must be launched with a specific option or environment to
@@ -1240,7 +1264,7 @@ recollindex -c "$confdir"
       downloads location (typically <filename>$HOME/Downloads</filename> ),
       then moved by a script in the old queue location. The script is
       automatically executed by the &RCL; indexer versions 1.23.5 and
-      newer. It could conceivably be executed independantly to make the new
+      newer. It could conceivably be executed independently to make the new
       browser extension compatible with an older &RCL; version (the script
       is named <command>recoll-we-move-files.py</command>).</para>
 
@@ -1432,26 +1456,27 @@ metadatacmds = ; <replaceable>tags</replaceable> = tmsu tags %f
         variable can be used to designate a file with Python code to edit
         the metadata fields (available for &RCL; 1.23.3 and later. 1.23.2
         has equivalent code inside the handler script). Example:</para>
+
         <programlisting>import sys
         import re
 
         class MetaFixer(object):
-        def __init__(self):
-        pass
+            def __init__(self):
+                pass
 
-        def metafix(self, nm, txt):
-        if nm == 'bibtex:pages':
-        txt = re.sub(r'--', '-', txt)
-        elif nm == 'someothername':
-        # do something else
-        pass
-        elif nm == 'stillanother':
-        # etc.
-        pass
+            def metafix(self, nm, txt):
+                if nm == 'bibtex:pages':
+                    txt = re.sub(r'--', '-', txt)
+                elif nm == 'someothername':
+                    # do something else
+                    pass
+                elif nm == 'stillanother':
+                    # etc.
+                    pass
         
-        return txt
-        def wrapup(self, metaheaders):
-        pass
+                return txt
+            def wrapup(self, metaheaders):
+                pass
         </programlisting>
 
         <para>If the 'metafix()' method is defined, it is called for each
@@ -1909,7 +1934,7 @@ fs.inotify.max_user_watches=32768
           space in the file name, and is not treated specially.</para>
           </listitem>
           <listitem><para>The search is insensitive to character case and
-          accents, independantly of the type of index.</para>
+          accents, independently of the type of index.</para>
           </listitem>
           <listitem><para>An entry without any wild card
           character and not capitalized will be prepended and appended
@@ -2604,7 +2629,7 @@ fs.inotify.max_user_watches=32768
         <para>The search will only propose replacement terms with
         spelling variations when no matching document were found. In some
         cases, both proper spellings and mispellings are present in the
-        index, and it may be interesting to look for them explicitely.</para>
+        index, and it may be interesting to look for them explicitly.</para>
 
         <para>The term explorer tool (started from the toolbar icon or
         from the <guilabel>Term explorer</guilabel> entry of the
@@ -2981,7 +3006,8 @@ fs.inotify.max_user_watches=32768
           <keycap>Ctrl-o</keycap> to open the document from the current
           row, <keycap>Ctrl-Shift-o</keycap> to open the document and close
           <command>recoll</command>, <keycap>Ctrl-d</keycap> to preview
-          the document.</para>
+          the document, and <keycap>Ctrl-e</keycap> to open the document
+          snippets window.</para> 
           </formalpara>
 
           <formalpara><title>Editing a new search while the focus is not
@@ -3024,7 +3050,7 @@ fs.inotify.max_user_watches=32768
         history, but the amount is limited: old queries will eventually
         be forgotten. Also, important queries may be difficult to find
         among others. This is why both types of queries can also be
-        explicitely saved to files, from the GUI menus:
+        explicitly saved to files, from the GUI menus:
         <menuchoice>
           <guimenu>File</guimenu>
           <guimenuitem>Save last query / Load last query</guimenuitem>
@@ -4355,7 +4381,7 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
       turn off its stem expansion and have no effect on
       case-sensitivity.</para>
 
-      <para>You can also explicitely activate case and diacritics
+      <para>You can also explicitly activate case and diacritics
       sensitivity by using modifiers with the query
       language. <literal>C</literal> will make the term case-sensitive, and
       <literal>D</literal> will make it
@@ -4397,7 +4423,7 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
           Lens</ulink> module useful.</para>
         </listitem>
         <listitem>
-          <para>There is also an independantly developed
+          <para>There is also an independently developed
           <ulink
               url="http://kde-apps.org/content/show.php/recollrunner?content=128203">
           Krunner plugin</ulink>.</para>
@@ -5008,25 +5034,9 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
         ones, through the GUI or any of the query interfaces.</para>
 
         <para>The search API is modeled along the Python database API
-        specification. There were two major changes along &RCL; versions:
-        <itemizedlist>
-          <listitem><para>The basis for the &RCL; API changed from Python
-          database API version 1.0 (&RCL; versions up to 1.18.1),
-          to version 2.0 (&RCL; 1.18.2 and later).</para></listitem>
-          <listitem><para>The <literal>recoll</literal> module became a
-          package (with an internal <literal>recoll</literal>
-          module) as of &RCL; version 1.19, in order to add more
-          functions. For existing code, this only changes the way
-          the interface must be imported.</para></listitem>
-        </itemizedlist>
-        </para>
+        version 2.0 specification (early versions used the version 1.0 spec).</para>
 
-        <para>We will describe the new API and package structure here. A
-        paragraph at the end of this section will explain a few differences
-        and ways to write code compatible with both versions.</para>
-
-        <para>The <literal>recoll</literal> package now contains two
-        modules:</para>
+        <para>The <literal>recoll</literal> package contains two modules:</para>
         <itemizedlist>
           <listitem><para>The <literal>recoll</literal> module contains
           functions and classes used to query (or update) the
@@ -5034,7 +5044,8 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
 
           <listitem><para>The <literal>rclextract</literal> module contains
           functions and classes used at query time to access document
-          data.</para>
+          data. The <literal>recoll</literal> module must be imported
+          before <literal>rclextract</literal></para>
           </listitem>
         </itemizedlist>
 
@@ -5044,8 +5055,7 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
         refer to the <link linkend="RCL.INSTALL.BUILDING">Building from source chapter</link>.</para>
 
         <para>As an introduction, the following small sample will run a
-        query and list the title and url for each of the results. It would
-        work with &RCL; 1.19 and later. The
+        query and list the title and url for each of the results. The
         <filename>python/samples</filename> source directory contains
         several examples of Python programming with &RCL;, exercising the
         extension more completely, and especially its data extraction
@@ -5162,6 +5172,17 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
 
       </sect2>
 
+      <sect2 id="RCL.PROGRAM.PYTHONAPI.LOG">
+        <title>Log messages for Python scripts</title>
+
+      <para>Two specific configuration variables:
+      <literal>pyloglevel</literal> and <literal>pylogfilename</literal>
+      allow overriding the generic values for Python programs. Set
+      <literal>pyloglevel</literal> to 2 to suppress default startup messages
+      (printed at level 3).</para>
+
+      </sect2>
+      
       <sect2 id="RCL.PROGRAM.PYTHONAPI.SEARCH">
         <title>Python search interface</title>
 
@@ -5251,7 +5272,7 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
             </varlistentry>
             
             <varlistentry>
-<term>Query.execute(query_string, stemming=1, stemlang="english", fetchtext=False)</term>
+<term>Query.execute(query_string, stemming=1, stemlang="english", fetchtext=False, collapseduplicates=False)</term>
               <listitem><para>Starts a search
               for <replaceable>query_string</replaceable>, a &RCL;
               search language string. If the index stores the document
@@ -5261,7 +5282,7 @@ text/html       [file:///Users/uncrypted-dockes/projets/bateaux/ilur/factEtCie/r
             </varlistentry>
 
             <varlistentry>
-              <term>Query.executesd(SearchData, fetchtext=False)</term>
+              <term>Query.executesd(SearchData, fetchtext=False, collapseduplicates=False)</term>
               <listitem><para>Starts a search for the query defined by
               the SearchData object. If the index stores the document
               texts and <literal>fetchtext</literal> is True, store the
@@ -6183,7 +6204,7 @@ for i in range(nres):
         <para>The normal &RCL; build procedure (see above) installs the API
         package for the default system version (python) along with the main
         code. The package for other Python versions (e.g. python3 if the
-        system default is python2) must be explicitely built and
+        system default is python2) must be explicitly built and
         installed.</para>
 
         <para>The <filename>python/recoll/</filename> directory contains
