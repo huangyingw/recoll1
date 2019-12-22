@@ -7,7 +7,6 @@
 "./fav.log.sort"
 "./includefile.conf"
 "./install.sh"
-"./ltmain.sh"
 "./packaging/FreeBSD/recoll/Makefile"
 "./packaging/FreeBSD/recoll/distinfo"
 "./packaging/FreeBSD/recoll/pkg-descr"
