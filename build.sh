@@ -3,5 +3,6 @@ SCRIPT=$(realpath "$0")
 SCRIPTPATH=$(dirname "$SCRIPT")
 cd "$SCRIPTPATH"
 
+cd src/
 ./configure
 make
