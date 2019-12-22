@@ -22,3 +22,7 @@
 [branch "dev"]
     remote = origin
     merge = refs/heads/dev
+[gdif]
+    ignore = ./install.sh
+    ignore = ./packaging/homebrew/recoll.rb
+    ignore = ./src/.env.json
